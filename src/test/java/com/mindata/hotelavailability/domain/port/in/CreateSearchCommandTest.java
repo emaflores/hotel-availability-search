@@ -1,4 +1,4 @@
-package hotelavailability.domain.port.in;
+package com.mindata.hotelavailability.domain.port.in;
 
 import com.mindata.hotelavailability.domain.port.in.CountSearchUseCase;
 import com.mindata.hotelavailability.domain.port.in.CreateSearchUseCase.CreateSearchCommand;

@@ -1,4 +1,4 @@
-package hotelavailability.domain.exception;
+package com.mindata.hotelavailability.domain.exception;
 
 import com.mindata.hotelavailability.domain.exception.InvalidSearchException;
 import com.mindata.hotelavailability.domain.exception.SearchNotFoundException;

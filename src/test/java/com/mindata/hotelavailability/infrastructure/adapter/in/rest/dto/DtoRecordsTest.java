@@ -1,4 +1,4 @@
-package hotelavailability.infrastructure.adapter.in.rest.dto;
+package com.mindata.hotelavailability.infrastructure.adapter.in.rest.dto;
 
 import com.mindata.hotelavailability.domain.model.HotelSearch;
 import com.mindata.hotelavailability.domain.port.in.CountSearchUseCase.CountResult;

@@ -1,4 +1,4 @@
-package hotelavailability.application.service;
+package com.mindata.hotelavailability.application.service;
 
 import com.mindata.hotelavailability.application.service.CreateSearchService;
 import com.mindata.hotelavailability.domain.exception.InvalidSearchException;

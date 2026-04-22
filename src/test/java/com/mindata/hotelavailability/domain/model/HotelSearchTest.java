@@ -1,4 +1,4 @@
-package hotelavailability.domain.model;
+package com.mindata.hotelavailability.domain.model;
 
 import com.mindata.hotelavailability.domain.exception.InvalidSearchException;
 import com.mindata.hotelavailability.domain.model.HotelSearch;

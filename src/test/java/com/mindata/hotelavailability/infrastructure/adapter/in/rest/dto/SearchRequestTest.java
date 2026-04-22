@@ -1,4 +1,4 @@
-package hotelavailability.infrastructure.adapter.in.rest.dto;
+package com.mindata.hotelavailability.infrastructure.adapter.in.rest.dto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

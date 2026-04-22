@@ -1,4 +1,4 @@
-package hotelavailability.infrastructure.adapter.in.rest;
+package com.mindata.hotelavailability.infrastructure.adapter.in.rest;
 
 import com.mindata.hotelavailability.domain.exception.InvalidSearchException;
 import com.mindata.hotelavailability.domain.exception.SearchNotFoundException;

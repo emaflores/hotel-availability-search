@@ -1,4 +1,4 @@
-package hotelavailability.infrastructure.config;
+package com.mindata.hotelavailability.infrastructure.config;
 
 import com.mindata.hotelavailability.application.service.CountSearchService;
 import com.mindata.hotelavailability.application.service.CreateSearchService;
