@@ -6,6 +6,7 @@ import com.mindata.hotelavailability.domain.port.in.CountSearchUseCase;
 import com.mindata.hotelavailability.domain.port.in.CreateSearchUseCase;
 import com.mindata.hotelavailability.infrastructure.adapter.in.rest.GlobalExceptionHandler;
 import com.mindata.hotelavailability.infrastructure.adapter.in.rest.SearchController;
+import com.mindata.hotelavailability.infrastructure.config.JacksonConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -15,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasItem;
@@ -28,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SearchController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JacksonConfig.class})
 class SearchControllerTest {
 
     @Autowired
@@ -40,13 +42,19 @@ class SearchControllerTest {
     @MockitoBean
     private CountSearchUseCase countSearchUseCase;
 
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static String futureDate(int daysFromNow) {
+        return LocalDate.now().plusDays(daysFromNow).format(FMT);
+    }
+
     @Test
     void postSearchReturns202WithGeneratedId() throws Exception {
         given(createSearchUseCase.createSearch(any())).willReturn("id-xyz");
 
         String body = """
-                {"hotelId":"1234aBc","checkIn":"29/12/2023","checkOut":"31/12/2023","ages":[30,29,1,3]}
-                """;
+                {"hotelId":"1234aBc","checkIn":"%s","checkOut":"%s","ages":[30,29,1,3]}
+                """.formatted(futureDate(1), futureDate(3));
 
         mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isAccepted())
@@ -69,8 +77,8 @@ class SearchControllerTest {
     @Test
     void postSearchReturns400WhenCheckInNotBeforeCheckOut() throws Exception {
         String body = """
-                {"hotelId":"h","checkIn":"02/01/2024","checkOut":"01/01/2024","ages":[1]}
-                """;
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[1]}
+                """.formatted(futureDate(2), futureDate(1));
 
         mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
@@ -81,8 +89,8 @@ class SearchControllerTest {
     @Test
     void postSearchReturns400WhenAgeNegative() throws Exception {
         String body = """
-                {"hotelId":"h","checkIn":"01/01/2024","checkOut":"02/01/2024","ages":[1,-2]}
-                """;
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[1,-2]}
+                """.formatted(futureDate(1), futureDate(2));
 
         mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
@@ -93,6 +101,66 @@ class SearchControllerTest {
         mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content("{oops"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(notNullValue()));
+    }
+
+    @Test
+    void postSearchReturns400WhenAgeSentAsString() throws Exception {
+        String body = """
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":["3"]}
+                """.formatted(futureDate(1), futureDate(2));
+
+        mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void postSearchReturns400WhenCheckInBeyondOneYear() throws Exception {
+        String checkIn = LocalDate.now().plusYears(1).plusDays(1).format(FMT);
+        String checkOut = LocalDate.now().plusYears(1).plusDays(3).format(FMT);
+        String body = """
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[1]}
+                """.formatted(checkIn, checkOut);
+
+        mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details",
+                        hasItem("checkIn must be within one year from today")));
+    }
+
+    @Test
+    void postSearchReturns400WhenCheckInInThePast() throws Exception {
+        String body = """
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[1]}
+                """.formatted(futureDate(-1), futureDate(1));
+
+        mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details",
+                        hasItem("checkIn must not be in the past")));
+    }
+
+    @Test
+    void postSearchReturns400WhenDateRangeExceedsMax() throws Exception {
+        String body = """
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[1]}
+                """.formatted(futureDate(1), futureDate(40));
+
+        mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details",
+                        hasItem("range between checkIn and checkOut must not exceed 30 days")));
+    }
+
+    @Test
+    void postSearchReturns400WhenAgeAboveMax() throws Exception {
+        String body = """
+                {"hotelId":"h","checkIn":"%s","checkOut":"%s","ages":[30,999]}
+                """.formatted(futureDate(1), futureDate(2));
+
+        mockMvc.perform(post("/search").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details",
+                        hasItem("ages must be less than or equal to 120")));
     }
 
     @Test

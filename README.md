@@ -9,6 +9,18 @@ La persistencia se realiza de forma asíncrona mediante Kafka, y los datos se al
 
 ---
 
+## Cómo levantar el proyecto
+
+Con Docker corriendo:
+
+```bash
+docker compose up --build
+```
+
+Esto arranca Oracle, Kafka y la app. La primera vez tarda un rato porque Oracle se toma su tiempo en estar listo.
+
+---
+
 ## Stack tecnológico
 
 - Java 21  
@@ -32,8 +44,8 @@ Registra una búsqueda y devuelve un identificador único.
 ```json
 {
   "hotelId": "1234aBc",
-  "checkIn": "29/12/2023",
-  "checkOut": "31/12/2023",
+  "checkIn": "15/02/2027",
+  "checkOut": "17/02/2027",
   "ages": [30, 29, 1, 3]
 }
 ```
@@ -57,8 +69,8 @@ Devuelve la búsqueda original y cuántas veces se repitió.
   "searchId": "xxxxx",
   "search": {
     "hotelId": "1234aBc",
-    "checkIn": "29/12/2023",
-    "checkOut": "31/12/2023",
+    "checkIn": "15/02/2027",
+    "checkOut": "17/02/2027",
     "ages": [3, 29, 30, 1]
   },
   "count": 100
@@ -88,14 +100,18 @@ Devuelve la búsqueda original y cuántas veces se repitió.
 
 ## Validaciones
 
-- `hotelId` obligatorio  
+- `hotelId` obligatorio, máximo 64 caracteres  
+- `checkIn` no puede ser anterior a hoy ni posterior a un año desde hoy  
 - `checkIn` < `checkOut`  
-- `ages` no vacío  
-- todas las edades ≥ 0  
+- rango entre `checkIn` y `checkOut` de como máximo 30 días  
+- `ages` no vacío, máximo 20 elementos  
+- cada edad entre 0 y 120  
 
-En caso de error se devuelve `400 Bad Request`.
+En caso de error se devuelve `400 Bad Request` con el detalle de las reglas violadas.
 
----
+> Las fechas del ejemplo son ilustrativas. Si al probar la API te aparece un `400`, asegurate de usar un `checkIn` entre hoy y un año desde hoy.
+
+--------
 
 ## Arquitectura
 
@@ -105,7 +121,7 @@ Se utilizó una estructura basada en arquitectura hexagonal:
 - `application`: casos de uso  
 - `infrastructure`: adapters (REST, Kafka, DB)  
 
----
+-----------
 
 ## Decisiones
 
@@ -113,47 +129,35 @@ Se utilizó una estructura basada en arquitectura hexagonal:
 - La arquitectura hexagonal también responde a un requisito explícito.  
 - Para este problema, una solución más simple sería suficiente, pero se priorizó cumplir los requisitos solicitados.  
 
----
-
-## Cómo levantar el proyecto
-
-Requisito: tener Docker instalado y corriendo.
-
-```bash
-docker compose up --build
-```
-
-Esto levanta:
-
-- Oracle Database  
-- Kafka  
-- la aplicación  
-
----
+----------
 
 ## Swagger / OpenAPI
 
 Disponible en:
 
-```text
-http://localhost:8080/swagger-ui.html
-```
+[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
----
+
+--------
 
 ## Tests
 
-Ejecutar:
-
-```bash
-mvn test
+```bash 
+  mvn test
 ```
 
-- Incluye tests unitarios e integración  
-- Se utiliza Testcontainers para levantar Oracle en tests  
-- Coverage configurado con JaCoCo  
+Los tests de integración usan Testcontainers, así que Docker también tiene que estar corriendo. Si ya tenés la app levantada con `docker compose up` no pasa nada, Testcontainers arranca sus propios contenedores aparte.
 
----
+- Unitarios + integración  
+- Oracle se levanta con Testcontainers  
+- Coverage con JaCoCo - para generar el reporte correr 
+```bash
+  mvn verify 
+```
+  
+  y abrir target/site/jacoco/index.html
+
+---------
 
 ## Notas
 

@@ -25,7 +25,7 @@ class SearchRequestTest {
     @Test
     void validRequestPassesValidationAndMapsToCommand() {
         SearchRequest req = new SearchRequest(
-                "h", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 2), List.of(30, 29, 1, 3));
+                "h", LocalDate.now(), LocalDate.now().plusDays(1), List.of(30, 29, 1, 3));
 
         Set<ConstraintViolation<SearchRequest>> violations = validator.validate(req);
         CreateSearchCommand cmd = req.toCommand();
@@ -70,10 +70,73 @@ class SearchRequestTest {
     @Test
     void validatorDetectsNegativeAge() {
         SearchRequest req = new SearchRequest("h",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 2),
+                LocalDate.now(), LocalDate.now().plusDays(1),
                 Arrays.asList(1, -1));
         Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
         assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("zero")));
+    }
+
+    @Test
+    void validatorDetectsAgeAboveMax() {
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.now(), LocalDate.now().plusDays(1),
+                List.of(30, 999));
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("120")));
+    }
+
+    @Test
+    void validatorDetectsHotelIdTooLong() {
+        String longId = "x".repeat(65);
+        SearchRequest req = new SearchRequest(longId,
+                LocalDate.now(), LocalDate.now().plusDays(1), List.of(1));
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("64 characters")));
+    }
+
+    @Test
+    void dateRangeWithinMaxAcceptsExactlyThirtyDays() {
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31), List.of(1));
+        assertTrue(req.isDateRangeWithinMax());
+    }
+
+    @Test
+    void validatorRejectsRangeLongerThanThirtyDays() {
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.now(), LocalDate.now().plusDays(40), List.of(1));
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("30 days")));
+    }
+
+    @Test
+    void validatorRejectsCheckInInThePast() {
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), List.of(1));
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("past")));
+    }
+
+    @Test
+    void validatorRejectsCheckInBeyondOneYear() {
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.now().plusYears(1).plusDays(1),
+                LocalDate.now().plusYears(1).plusDays(3),
+                List.of(1));
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("one year")));
+    }
+
+    @Test
+    void validatorDetectsTooManyAges() {
+        List<Integer> many = new ArrayList<>();
+        for (int i = 0; i < 21; i++) {
+            many.add(1);
+        }
+        SearchRequest req = new SearchRequest("h",
+                LocalDate.now(), LocalDate.now().plusDays(1), many);
+        Set<ConstraintViolation<SearchRequest>> v = validator.validate(req);
+        assertTrue(v.stream().anyMatch(c -> c.getMessage().contains("20 elements")));
     }
 
     @Test
