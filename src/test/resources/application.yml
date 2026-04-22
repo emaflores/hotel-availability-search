@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+
+app:
+  kafka:
+    topic: hotel_availability_searches
+    group-id: test-consumer
