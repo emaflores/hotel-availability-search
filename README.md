@@ -50,6 +50,13 @@ Registra una búsqueda y devuelve un identificador único.
 }
 ```
 
+Con curl:
+```bash
+curl -X POST http://localhost:8080/search \
+  -H "Content-Type: application/json" \
+  -d '{"hotelId":"1234aBc","checkIn":"15/02/2027","checkOut":"17/02/2027","ages":[30,29,1,3]}'
+```
+
 **Response:**
 ```json
 {
@@ -62,6 +69,11 @@ Registra una búsqueda y devuelve un identificador único.
 ### GET /count?searchId=xxxxx
 
 Devuelve la búsqueda original y cuántas veces se repitió.
+
+Con curl (reemplazando `xxxxx` por el `searchId` que devolvió `/search`):
+```bash
+curl "http://localhost:8080/count?searchId=xxxxx"
+```
 
 **Response:**
 ```json
